@@ -1,0 +1,173 @@
+
+#get data of country india
+GET covid-19/_search
+{
+  "query": {
+    "match": {
+      "Country/Region": "India"
+    }
+    
+  }
+  
+}
+
+#get data of countries if confirmed cases are more than 1000000 by latest date
+
+GET covid-19/_search
+{
+  "size": 0,
+  "aggs": {
+    "countries_with_more_than_1M_cases": {
+      "terms": {
+        "field": "Country/Region",
+        "size": 200,
+        "order": {
+          "total_confirmed": "desc"
+        }
+      },
+      "aggs": {
+        "total_confirmed": {
+          "sum": {
+            "field": "Confirmed"
+          }
+        }
+      }
+    }
+  },
+  "query": {
+    "range": {
+      "Confirmed": {
+        "gte": 1000000
+      }
+    }
+  }
+}
+
+
+#Get data of countries with 0 death
+GET covid-19/_search
+{
+  "query": {
+      "match": {
+        "Deaths": 0
+      }
+    },
+    "sort": [
+    {
+      "Date": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+
+#Get qyery to find first time surpassing 100000 cases for country india
+GET covid-19/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "Country/Region": "India" }},
+        { "range": { "Confirmed": { "gt": 100000 }}}
+      ]
+    }
+  },
+    "sort": [
+    {
+      "Date": {
+        "order": "asc"
+      }
+    }
+  ]
+}
+
+#Countries to get more recovered cases than deaths
+GET covid-19/_search
+{
+  "size": 20, 
+  "query": {
+    "script_score": {
+      "query": {
+        "match_all": {}
+      },
+      "script": {
+        "source": "if (doc['Recovered'].value > doc['Deaths'].value) return 1; else return 0;"
+      }
+    }
+  },
+  "sort": [
+    {
+      "Date": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+#top 10 countries with highest number of recovery cases
+GET covid-19/_search
+{
+  "size": 0,
+  "aggs": {
+    "total_recovered_per_country": {
+      "terms": {
+        "field": "Country/Region",
+        "size": 10,
+        "order": {
+          "total_recovered": "desc"
+        }
+      },
+      "aggs": {
+        "total_recovered": {
+          "sum": {
+            "field": "Recovered"
+          }
+        }
+      }
+    }
+  }
+}
+
+#Total confirmed cases over the time
+GET covid-19/_search
+{
+  "size": 0,
+  "aggs": {
+    "confirmed_over_time": {
+      "date_histogram": {
+        "field": "Date",
+        "calendar_interval": "month"
+      },
+      "aggs": {
+        "total_confirmed": {
+          "sum": {
+            "field": "Confirmed"
+          }
+        }
+      }
+    }
+  }
+}
+
+#Get total number of confirmed, deaths, and recovred cases
+GET covid-19/_search
+{
+  "size": 0,
+  "aggs": {
+    "total_confirmed": {
+      "sum": {
+        "field": "Confirmed"
+      }
+    },
+    "total_deaths": {
+      "sum": {
+        "field": "Deaths"
+      }
+    },
+    "total_recovered": {
+      "sum": {
+        "field": "Recovered"
+      }
+    }
+  
